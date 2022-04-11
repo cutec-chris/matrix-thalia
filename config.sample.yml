@@ -1,0 +1,5 @@
+server:
+  url: "https://matrix.org"
+  user: thalia
+  password: botpassword
+  prefix: "thalia:"
