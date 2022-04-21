@@ -1,4 +1,4 @@
-import simplematrixbotlib as botlib,yaml,json,logging,asyncio,nio
+import simplematrixbotlib as botlib,yaml,json,logging,asyncio,nio,sys,pathlib
 with open('config.yml', 'r') as file:
     config = yaml.safe_load(file)
 try: 

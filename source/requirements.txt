@@ -1,3 +1,4 @@
 simplematrixbotlib
 pyyaml
 spacy
+spacy_langdetect

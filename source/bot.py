@@ -1,7 +1,7 @@
 #https://github.com/DS4A-team34/ds4a_application/blob/736c69e002cf4a46f83cbd8c522ee6b0029f0793/common6.py
-import pathlib
 from init import *
-import spacy
+import spacy,importlib,importlib.util,importlib.machinery
+plugins = []
 nlp = spacy.load("de_core_news_sm")
 @bot.listener.on_message_event
 class Client(Config):
@@ -28,6 +28,31 @@ async def check_server(server):
             else:
                 await bot.api.send_text_message(server['room'],str(e))
         await asyncio.sleep(1)
+async def PluginWatcher():
+    global plugins
+    PluginPath = pathlib.Path(__file__).parent / 'plugins'
+    RelativePath = '.'+str(PluginPath.relative_to(pathlib.Path(__file__).parent.absolute()))
+    while True:
+        for file in PluginPath.glob('*.py'):
+            package = file.name.replace('.py','')
+            module = None
+            for mod in plugins:
+                if mod.__name__ == package:
+                    module = mod
+                    break
+            if module:
+                if module._lastchanged < file.lstat().st_mtime:
+                    module._lastchanged = file.lstat().st_mtime
+                    loader = importlib.machinery.SourceFileLoader(package,str(file.absolute()))
+                    module = loader.load_module()
+                    sys.modules[package] = module
+            else:
+                loader = importlib.machinery.SourceFileLoader(package,str(file.absolute()))
+                module = loader.load_module()
+                module.__loader__ = loader
+                module._lastchanged = file.lstat().st_mtime
+                plugins.append(module)
+        await asyncio.sleep(1)
 try:
     if pathlib.Path('data.json').exists():
         with open('data.json', 'r') as f:
@@ -40,7 +65,9 @@ except BaseException as e:
 @bot.listener.on_startup
 async def startup(room):
     global loop,servers
-    loop = asyncio.get_running_loop()
+    if not loop:
+        loop = asyncio.get_running_loop()
+        loop.create_task(PluginWatcher())
     for server in servers:
         if server['room'] == room:
             loop.create_task(check_server(server))
