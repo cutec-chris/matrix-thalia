@@ -2,7 +2,6 @@
 from init import *
 import spacy,importlib,importlib.util,importlib.machinery
 plugins = []
-nlp = spacy.load("de_core_news_sm")
 @bot.listener.on_message_event
 class Client(Config):
     def __init__(self, room, **kwargs) -> None:
