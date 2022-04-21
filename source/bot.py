@@ -1,4 +1,5 @@
 #https://github.com/DS4A-team34/ds4a_application/blob/736c69e002cf4a46f83cbd8c522ee6b0029f0793/common6.py
+import pathlib
 from init import *
 import spacy
 nlp = spacy.load("de_core_news_sm")
@@ -28,12 +29,13 @@ async def check_server(server):
                 await bot.api.send_text_message(server['room'],str(e))
         await asyncio.sleep(1)
 try:
-    with open('data.json', 'r') as f:
-        nservers = json.load(f)
-        for server in nservers:
-            servers.append(Server(server))
+    if pathlib.Path('data.json').exists():
+        with open('data.json', 'r') as f:
+            nservers = json.load(f)
+            for server in nservers:
+                servers.append(Server(server))
 except BaseException as e: 
-    logging.error('Failed to read config.yml:'+str(e))
+    logging.error('Failed to read data:'+str(e))
     exit(1)
 @bot.listener.on_startup
 async def startup(room):
@@ -49,12 +51,9 @@ async def bot_help(room, message):
         prefix: {prefix}
         commands:
             speaking to bot:
-                is used as rcon console command when you are in the admins list
+                is handled as a mention and forces thalia to answer
             speaking in channel:
-                is send as server global chat message if supported
-            listen:
-                command: listen server rcon_port [password] [Query Port]
-                description: add ark server
+                thalia trys to detect if she is target of the question or discussion and try to be gently in answering
             help:
                 command: help, ?, h
                 description: display help command
