@@ -1,5 +1,6 @@
 import plugin
-def CheckSentence(s,User,ForceAnswer=False):
+async def CheckSentence(s,User,ForceAnswer=False):
     words = plugin.analyse_sentence(s)
-    if 'hi' in words:
-        return {'text':'ok'}
+    for token in words:
+        if token.text in ['hi','hallo']:
+            return {'text':'hallo'}

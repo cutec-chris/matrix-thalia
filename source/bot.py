@@ -1,3 +1,4 @@
+from logging import warning
 from init import *
 import spacy,importlib,importlib.util,importlib.machinery
 plugins = []
@@ -11,18 +12,40 @@ async def tell(room, message):
     match = botlib.MessageMatch(room, message, bot, prefix)
     if match.is_not_from_this_bot() and match.prefix():
         for client in servers:
-            if client.room == room.room_id:
+            if client.room == room.room_id and message.sender == client.sender:
                 aClient = client
+                ForceAnser = True
                 break
     elif match.is_not_from_this_bot():
         for client in servers:
-            if client.room == room.room_id:
+            if client.room == room.room_id and message.sender == client.sender:
                 aClient = client
+                ForceAnser = False
                 break
     if not aClient:
-        aClient = Client(room.room_id)
-    if hasattr(aClient,'activeConversation'):
-        aPlugin = aClient.activeConversation
+        aClient = Client(room.room_id,sender=message.sender)
+        ForceAnser = False
+    aPlugin = None
+    res = None
+    if hasattr(aClient,'activeConversation') and aClient.activeConversation != {}:
+        aPlugin = aClient.activeConversation['_plugin']
+        res = await aPlugin.CheckSentence(message,aClient,ForceAnser)
+        if res:
+            aClient.activeConversation['_plugin'] = aPlugin
+        else:
+            aPlugin = None
+    if not aPlugin:
+        aClient.activeConversation = {}
+        for plugin in plugins:
+            try:
+                res = await plugin.CheckSentence(message.body,aClient,ForceAnser)
+                if res:
+                    aClient.activeConversation['_plugin'] = plugin
+                    servers.append(aClient)
+                    break
+            except BaseException as e:logging.warning(str(e))
+    if res:
+        await bot.api.send_text_message(room.room_id,res['text'])
 async def check_server(server):
     global servers
     while True:
