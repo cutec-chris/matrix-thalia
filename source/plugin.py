@@ -1,18 +1,20 @@
 import spacy
 languages = {}
 n_disable=[
-    'tagger', 
+    #'tagger', 
     #'parser', 
     'ner', 
     #'lemmatizer', 
     'textcat'
 ]
 gpu_activated = spacy.prefer_gpu()
-def analyse_sentence(text,intendlanguage=None):
-    if not intendlanguage in languages:
-        if   intendlanguage == 'de': languages['de'] = spacy.load("de_core_news_md",disable=n_disable)
-        elif intendlanguage == 'en': languages['en'] = spacy.load("en_core_web_md",disable=n_disable)
-        #else:                        languages['xx'] = spacy.load("xx_ent_wiki_sm",disable=n_disable)
+def analyse_sentence(text,intendlanguage='de'):
+    if len(languages)==0:
+        try: languages['de'] = spacy.load("de_core_news_md",disable=n_disable)
+        except: pass
+        try: languages['en'] = spacy.load("en_core_web_md",disable=n_disable)
+        except: pass
     if not intendlanguage in languages: return None
-    return languages[intendlanguage](text)
+    res = languages[intendlanguage](text)
+    return res
     
