@@ -9,27 +9,28 @@ class Client(Config):
 async def tell(room, message):
     global servers,plugins
     aClient = None
+    ForceAnser = None
     match = botlib.MessageMatch(room, message, bot, prefix)
     if match.is_not_from_this_bot() and match.prefix():
+        ForceAnser = True
         for client in servers:
             if client.room == room.room_id and message.sender == client.sender:
                 aClient = client
-                ForceAnser = True
                 break
     elif match.is_not_from_this_bot():
+        ForceAnser = False
         for client in servers:
             if client.room == room.room_id and message.sender == client.sender:
                 aClient = client
-                ForceAnser = False
                 break
-    if not aClient:
+    if not ForceAnser == None:
         aClient = Client(room.room_id,sender=message.sender)
-        ForceAnser = False
+    else: return
     aPlugin = None
     res = None
     if hasattr(aClient,'activeConversation') and aClient.activeConversation != {}:
         aPlugin = aClient.activeConversation['_plugin']
-        res = await aPlugin.CheckSentence(message,aClient,ForceAnser)
+        res = await aPlugin.CheckSentence(message.body,aClient,ForceAnser)
         if res:
             aClient.activeConversation['_plugin'] = aPlugin
         else:
