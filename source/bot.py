@@ -1,22 +1,28 @@
-#https://github.com/DS4A-team34/ds4a_application/blob/736c69e002cf4a46f83cbd8c522ee6b0029f0793/common6.py
 from init import *
 import spacy,importlib,importlib.util,importlib.machinery
 plugins = []
-@bot.listener.on_message_event
 class Client(Config):
     def __init__(self, room, **kwargs) -> None:
         super().__init__(room, **kwargs) 
+@bot.listener.on_message_event
 async def tell(room, message):
-    global servers,lastsend
+    global servers,plugins
+    aClient = None
     match = botlib.MessageMatch(room, message, bot, prefix)
     if match.is_not_from_this_bot() and match.prefix():
-        for server in servers:
-            if server['room'] == room.room_id:
-                pass
+        for client in servers:
+            if client.room == room.room_id:
+                aClient = client
+                break
     elif match.is_not_from_this_bot():
-        for server in servers:
-            if server['room'] == room.room_id:
-                pass
+        for client in servers:
+            if client.room == room.room_id:
+                aClient = client
+                break
+    if not aClient:
+        aClient = Client(room.room_id)
+    if hasattr(aClient,'activeConversation'):
+        aPlugin = aClient.activeConversation
 async def check_server(server):
     global servers
     while True:
@@ -41,23 +47,29 @@ async def PluginWatcher():
                     break
             if module:
                 if module._lastchanged < file.lstat().st_mtime:
-                    module._lastchanged = file.lstat().st_mtime
+                    try:
+                        module._lastchanged = file.lstat().st_mtime
+                        loader = importlib.machinery.SourceFileLoader(package,str(file.absolute()))
+                        module = loader.load_module()
+                        sys.modules[package] = module
+                    except BaseException as e:
+                        logging.warning('Failed to reload Plugin %s: %s' % (package,str(e)))
+            else:
+                try:
                     loader = importlib.machinery.SourceFileLoader(package,str(file.absolute()))
                     module = loader.load_module()
-                    sys.modules[package] = module
-            else:
-                loader = importlib.machinery.SourceFileLoader(package,str(file.absolute()))
-                module = loader.load_module()
-                module.__loader__ = loader
-                module._lastchanged = file.lstat().st_mtime
-                plugins.append(module)
+                    module.__loader__ = loader
+                    module._lastchanged = file.lstat().st_mtime
+                    plugins.append(module)
+                except BaseException as e:
+                    logging.warning('Failed to load Plugin %s: %s' % (package,str(e)))
         await asyncio.sleep(1)
 try:
     if pathlib.Path('data.json').exists():
         with open('data.json', 'r') as f:
             nservers = json.load(f)
             for server in nservers:
-                servers.append(Server(server))
+                servers.append(Client(server))
 except BaseException as e: 
     logging.error('Failed to read data:'+str(e))
     exit(1)
