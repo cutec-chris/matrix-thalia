@@ -5,6 +5,29 @@ plugins = []
 class Client(Config):
     def __init__(self, room, **kwargs) -> None:
         super().__init__(room, **kwargs) 
+languages = {}
+n_disable=[
+    #'tagger', 
+    #'parser', 
+    #'ner', 
+    #'lemmatizer', 
+    #'textcat'
+]
+gpu_activated = spacy.prefer_gpu()
+def analyse_sentence(text,intendlanguage='de'):
+    model_size='md'
+    if len(languages)==0:
+        try: 
+            languages['de'] = spacy.load("de_core_news_"+model_size,disable=n_disable)
+            languages['de'].add_pipe("merge_entities")
+        except: pass
+        try: 
+            languages['en'] = spacy.load("en_core_web_"+model_size,disable=n_disable)
+            languages['en'].add_pipe("merge_entities")
+        except: pass
+    if not intendlanguage in languages: return None
+    res = languages[intendlanguage](text)
+    return res
 @bot.listener.on_message_event
 async def tell(room, message):
     global servers,plugins
@@ -28,9 +51,17 @@ async def tell(room, message):
     else: return
     aPlugin = None
     res = None
+    analysed = analyse_sentence(message.body,'de')
+    if analysed:
+        undef_token = 0
+        for token in analysed:
+            if token.ent_type_=='MISC' and token.pos_ == 'X':
+                undef_token += 1
+        if undef_token > 0:
+            analysed = analyse_sentence(message.body,'en')
     if hasattr(aClient,'activeConversation') and aClient.activeConversation != {}:
         aPlugin = aClient.activeConversation['_plugin']
-        res = await aPlugin.CheckSentence(message.body,aClient,ForceAnser)
+        res = await aPlugin.CheckSentence(analysed,aClient,ForceAnser)
         if res:
             aClient.activeConversation['_plugin'] = aPlugin
         else:
@@ -39,7 +70,7 @@ async def tell(room, message):
         aClient.activeConversation = {}
         for plugin in plugins:
             try:
-                res = await plugin.CheckSentence(message.body,aClient,ForceAnser)
+                res = await plugin.CheckSentence(analysed,aClient,ForceAnser)
                 if res:
                     aClient.activeConversation['_plugin'] = plugin
                     servers.append(aClient)
