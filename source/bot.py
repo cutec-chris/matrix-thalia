@@ -51,14 +51,20 @@ async def tell(room, message):
     else: return
     aPlugin = None
     res = None
+    analysed_en = analyse_sentence(message.body,'en')
     analysed = analyse_sentence(message.body,'de')
     if analysed:
         undef_token = 0
         for token in analysed:
-            if token.ent_type_=='MISC' and token.pos_ == 'X':
-                undef_token += 1
-        if undef_token > 0:
-            analysed = analyse_sentence(message.body,'en')
+            if token.pos_ == 'X':
+                undef_token += 0.5
+        if undef_token > 0 or (len(analysed)<=(message.body.count(" "))):
+            undef_token_en = 0
+            for token in analysed_en:
+                if token.pos_ == 'X':
+                    undef_token_en += 0.5
+            if undef_token_en < undef_token:
+                analysed = analysed_en
     if hasattr(aClient,'activeConversation') and aClient.activeConversation != {}:
         aPlugin = aClient.activeConversation['_plugin']
         res = await aPlugin.CheckSentence(analysed,aClient,ForceAnser)
@@ -93,8 +99,8 @@ async def PluginWatcher():
     PluginPath = pathlib.Path(__file__).parent / 'plugins'
     RelativePath = '.'+str(PluginPath.relative_to(pathlib.Path(__file__).parent.absolute()))
     while True:
-        for file in PluginPath.glob('*.py'):
-            package = file.name.replace('.py','')
+        for file in PluginPath.glob('**/*.py'):
+            package = str(file.relative_to(pathlib.Path(__file__).parent)).replace('.py','').replace('/','.')
             module = None
             for mod in plugins:
                 if mod.__name__ == package:
