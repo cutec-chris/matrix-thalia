@@ -2,3 +2,4 @@ simplematrixbotlib
 pyyaml
 spacy
 spacy_langdetect
+qrcode[pil]

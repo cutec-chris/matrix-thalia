@@ -1,6 +1,6 @@
-from logging import warning
 from init import *
 import spacy,importlib,importlib.util,importlib.machinery
+ColoredOutput(logging.DEBUG)
 plugins = []
 class Client(Config):
     def __init__(self, room, **kwargs) -> None:
@@ -17,15 +17,19 @@ gpu_activated = spacy.prefer_gpu()
 def analyse_sentence(text,intendlanguage='de'):
     model_size='md'
     if len(languages)==0:
+        logging.debug('loading languages...')
         try: 
             languages['de'] = spacy.load("de_core_news_"+model_size,disable=n_disable)
-            languages['de'].add_pipe("merge_entities")
+            #languages['de'].add_pipe("merge_entities")
         except: pass
         try: 
             languages['en'] = spacy.load("en_core_web_"+model_size,disable=n_disable)
-            languages['en'].add_pipe("merge_entities")
+            #languages['en'].add_pipe("merge_entities")
         except: pass
-    if not intendlanguage in languages: return None
+        logging.debug('...done')
+    if not intendlanguage in languages:
+        logging.warning('language not found: %s' % intendlanguage) 
+        return None
     res = languages[intendlanguage](text)
     return res
 @bot.listener.on_message_event
@@ -65,6 +69,10 @@ async def tell(room, message):
                     undef_token_en += 0.5
             if undef_token_en < undef_token:
                 analysed = analysed_en
+    logging.debug('language: {lang}'.format(lang=analysed.lang_))
+    logging.debug(    '{text:<16}{pos:<9}{tag:<9}{lemma:<16}{label:<12}{entid:<16}{vector:<16}'.format(text='text',vector='vector',pos='pos',tag='tag',lemma='lemma',label='label',entid='entid'))
+    for token in analysed:
+        logging.debug('{text:<16}{pos:<9}{tag:<9}{lemma:<16}{label:<12}{entid:<16}{vector:<16}'.format(text=token.text,vector=round(token.vector_norm,4),pos=token.pos_,tag=token.tag_,lemma=token.lemma_,label=token.ent_type_,entid=token.ent_id_))
     if hasattr(aClient,'activeConversation') and aClient.activeConversation != {}:
         aPlugin = aClient.activeConversation['_plugin']
         res = await aPlugin.CheckSentence(analysed,aClient,ForceAnser)

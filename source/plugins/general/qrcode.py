@@ -1,2 +1,4 @@
+import qrcode
 async def CheckSentence(words,User,ForceAnswer=False):
-    return None
+    res = None 
+    return res
