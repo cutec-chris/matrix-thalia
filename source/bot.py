@@ -1,37 +1,10 @@
 from init import *
-import spacy,importlib,importlib.util,importlib.machinery
+import spacy,importlib,importlib.util,importlib.machinery,nlp
 ColoredOutput(logging.DEBUG)
 plugins = []
 class Client(Config):
     def __init__(self, room, **kwargs) -> None:
         super().__init__(room, **kwargs) 
-languages = {}
-n_disable=[
-    #'tagger', 
-    #'parser', 
-    #'ner', 
-    #'lemmatizer', 
-    #'textcat'
-]
-gpu_activated = spacy.prefer_gpu()
-def analyse_sentence(text,intendlanguage='de'):
-    model_size='md'
-    if len(languages)==0:
-        logging.debug('loading languages...')
-        try: 
-            languages['de'] = spacy.load("de_core_news_"+model_size,disable=n_disable)
-            #languages['de'].add_pipe("merge_entities")
-        except: pass
-        try: 
-            languages['en'] = spacy.load("en_core_web_"+model_size,disable=n_disable)
-            #languages['en'].add_pipe("merge_entities")
-        except: pass
-        logging.debug('...done')
-    if not intendlanguage in languages:
-        logging.warning('language not found: %s' % intendlanguage) 
-        return None
-    res = languages[intendlanguage](text)
-    return res
 @bot.listener.on_message_event
 async def tell(room, message):
     global servers,plugins
@@ -55,8 +28,8 @@ async def tell(room, message):
     else: return
     aPlugin = None
     res = None
-    analysed_en = analyse_sentence(message.body,'en')
-    analysed = analyse_sentence(message.body,'de')
+    analysed_en = nlp.analyse_sentence(message.body,'en')
+    analysed = nlp.analyse_sentence(message.body,'de')
     if analysed:
         undef_token = 0
         for token in analysed:
@@ -70,9 +43,9 @@ async def tell(room, message):
             if undef_token_en < undef_token:
                 analysed = analysed_en
     logging.debug('language: {lang}'.format(lang=analysed.lang_))
-    logging.debug(    '{text:<16}{pos:<9}{tag:<9}{lemma:<16}{label:<12}{entid:<16}{vector:<16}'.format(text='text',vector='vector',pos='pos',tag='tag',lemma='lemma',label='label',entid='entid'))
+    logging.debug(    '{text:<12}{pos:<6}{tag:<6}{lemma:<10}{label:<6}{dep:<6}{childs:<25}{entid:<7}{vector:<8}'.format(text='text',vector='vector',pos='pos',tag='tag',lemma='lemma',label='label',entid='entid',dep='dep',childs='childs'))
     for token in analysed:
-        logging.debug('{text:<16}{pos:<9}{tag:<9}{lemma:<16}{label:<12}{entid:<16}{vector:<16}'.format(text=token.text,vector=round(token.vector_norm,4),pos=token.pos_,tag=token.tag_,lemma=token.lemma_,label=token.ent_type_,entid=token.ent_id_))
+        logging.debug('{text:<12}{pos:<6}{tag:<6}{lemma:<10}{label:<6}{dep:<6}{childs:<25}{entid:<7}{vector:<8}'.format(text=token.text,vector=str(round(token.vector_norm,4)),pos=token.pos_,tag=token.tag_,lemma=token.lemma_,label=token.ent_type_,entid=token.ent_id_,dep=token.dep_,childs=str([child for child in token.children])))
     if hasattr(aClient,'activeConversation') and aClient.activeConversation != {}:
         aPlugin = aClient.activeConversation['_plugin']
         res = await aPlugin.CheckSentence(analysed,aClient,ForceAnser)

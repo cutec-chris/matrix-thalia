@@ -11,7 +11,7 @@ async def CheckSentence(words,User,ForceAnswer=False):
         or word.pos_ == 'ADV'\
         or word.pos_ == 'X'\
         or word.pos_ == 'NOUN':
-            formula += word.text
+            formula += ' '+word.text
             count += 1
         else:
             formula = ''
