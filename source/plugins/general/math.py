@@ -17,9 +17,10 @@ async def CheckSentence(words,User,ForceAnswer=False):
             formula = ''
             count = 0
     try: 
-        r = eval(formula)
-        if not r is None:
-            res = {'text': str(r)}
+        if ForceAnswer:
+            r = eval(formula)
+            if not r is None:
+                res = {'text': str(r)}
     except BaseException as e:
         logging.debug(str(e))
     return res

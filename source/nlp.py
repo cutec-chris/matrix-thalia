@@ -26,3 +26,32 @@ def analyse_sentence(text,intendlanguage='de'):
         return None
     res = languages[intendlanguage](text)
     return res
+def is_question(sentence_doc):
+    res = {}
+    for token in sentence_doc:
+        if token.tag_ in ['PWS','PWAV','WP','WRB']\
+        and token.pos_ in ['PRON','ADV','SCONJ']:
+            if token.lemma_ in ['wer','who']:
+                res['label'] = ['PERSON','PER']
+            elif token.lemma_ in ['wann','when']:
+                res['label'] = ['DATE']
+            elif token.lemma_ in ['was','what']:
+                res['label'] = ['ORG']
+        if token.tag_ in ['VAFIN','VBZ']:
+            res['verb'] = token.lemma_
+    if not 'label' in res:
+        res = None
+    return res
+def is_futuristic(sentence_doc):
+    if any((token.morph.get('Tense') == [] and
+            token.morph.get('VerbForm') == ['Fin'] and 
+            token.morph.get('Mood') == [])
+           or
+           (token.morph.get('Tense') == ['Pres'] and
+            token.morph.get('VerbForm') == ['Fin'] and
+            token.morph.get('Mood') != ['Ind'])
+           for token in sentence_doc):
+
+        return True
+    else:
+        return False
