@@ -12,29 +12,35 @@ async def CheckSentence(words,User,ForceAnswer=False):
                 article = get_article(words.lang_,sr[0]['title'])
         if article:
             clean_article = re.sub(r'\{\{(.*)\}\}','',article)
+            clean_article = re.sub(r'<!--(.*)-->','',clean_article)
             clean_article = re.sub(r'<ref(.*)</ref>','',clean_article)
             clean_article = re.sub(r'\[\[(.*):(.*)\]\]','',clean_article)
             clean_article = re.sub(r'\[\[(?:[^|\]]*\|)?([^\]]+)\]\]',r'\1',clean_article)
             clean_article = re.sub(r'\[\[(.*)\]\]','',clean_article)
             clean_article = clean_article.replace('\'','')
             clean_article = clean_article.replace('&nbsp;',' ')
-            #clean_article = re.sub(r'\'(.*)\'',r'\1',clean_article)
+            clean_article = re.sub(r'====(.*)====',r'\n\1\n',clean_article)
+            clean_article = re.sub(r'===(.*)===',r'\n\1\n',clean_article)
+            clean_article = re.sub(r'==(.*)==',r'\n\1\n',clean_article)
+            clean_article = re.sub(r'=(.*)=',r'\n\1\n',clean_article)
             sentences = nlp.analyse_sentence(clean_article)
             if quest['verb'] == 'be'\
             or quest['verb'] == 'sein': 
                 count = 0
-                res = {'markdown':''}
+                res = {'markdown':[]}
                 for sentence in sentences.sents:
+                    if count>0 and '\n' in sentence.text.strip():
+                        break
                     if sentence.text.strip() != '':
-                        res['markdown'] += sentence.text.strip()+'\n'
+                        res['markdown'].append(sentence.text.strip())
                         count +=1
                     if count>=3: break
             else:
-                res = {'markdown':''}
+                res = {'markdown':[]}
                 for sentence in sentences.sents:
                     for token in sentence:
                         if token.lemma_ == quest['verb']:
-                            res['markdown'] += sentence.text+'\n'
+                            res['markdown'].append(sentence.text)
                             break
             pass
     return res
