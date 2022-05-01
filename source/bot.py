@@ -64,7 +64,10 @@ async def tell(room, message):
                     break
             except BaseException as e:logging.warning(str(e))
     if res:
-        await bot.api.send_text_message(room.room_id,res['text'])
+        if 'markdown' in res:
+            await bot.api.send_markdown_message(room.room_id,res['markdown'])
+        elif 'text' in res:
+            await bot.api.send_text_message(room.room_id,res['text'])
 async def check_server(server):
     global servers
     while True:
