@@ -1,4 +1,5 @@
 import spacy,logging
+request_headers = {'User-Agent': 'Thalia/0.1 (https://github.com/cutec-chris/matrix-thalia; thalia@chris.ullihome.de)'}
 languages = {}
 n_disable=[
     #'tagger', 
@@ -37,8 +38,25 @@ def is_question(sentence_doc):
                 res['label'] = ['DATE']
             elif token.lemma_ in ['was','what']:
                 res['label'] = ['ORG']
-        if token.tag_ in ['VAFIN','VBZ']:
+        if token.tag_ in ['VAFIN','VBZ','VVPP']\
+        and token.dep_ != 'ROOT':
             res['verb'] = token.lemma_
+    if not 'verb' in res:
+        for token in sentence_doc:
+            if token.tag_ in ['VAFIN','VBZ','VVPP']:
+                res['verb'] = token.lemma_
+    if 'verb' in res:
+        for token in sentence_doc:
+            if token.dep_ == 'ROOT':
+                for child in token.children:
+                    if child.lemma_ != res['verb']\
+                    and child.pos_  != 'PUNCT':
+                        res['object'] = ''
+                        for obj_token in sentence_doc:
+                            if obj_token == child\
+                            or obj_token in child.children:
+                                res['object'] += ' '+obj_token.text
+                        res['object'] = res['object'][1:]
     if not 'label' in res:
         res = None
     return res
