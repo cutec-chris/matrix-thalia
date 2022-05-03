@@ -11,19 +11,8 @@ async def CheckSentence(words,User,ForceAnswer=False):
             if len(sr)>0:
                 article = get_article(words.lang_,sr[0]['title'])
         if article:
-            clean_article = re.sub(r'\{\{(.*)\}\}','',article)
-            clean_article = re.sub(r'<!--(.*)-->','',clean_article)
-            clean_article = re.sub(r'<ref(.*)</ref>','',clean_article)
-            clean_article = re.sub(r'\[\[(.*):(.*)\]\]','',clean_article)
-            clean_article = re.sub(r'\[\[(?:[^|\]]*\|)?([^\]]+)\]\]',r'\1',clean_article)
-            clean_article = re.sub(r'\[\[(.*)\]\]','',clean_article)
-            clean_article = clean_article.replace('\'','')
-            clean_article = clean_article.replace('&nbsp;',' ')
-            clean_article = re.sub(r'====(.*)====',r'\n\1\n',clean_article)
-            clean_article = re.sub(r'===(.*)===',r'\n\1\n',clean_article)
-            clean_article = re.sub(r'==(.*)==',r'\n\1\n',clean_article)
-            clean_article = re.sub(r'=(.*)=',r'\n\1\n',clean_article)
-            sentences = nlp.analyse_sentence(clean_article)
+            cleaned_article = clean_article(article) 
+            sentences = nlp.analyse_sentence(cleaned_article)
             if quest['verb'] == 'be'\
             or quest['verb'] == 'sein': 
                 count = 0
@@ -68,3 +57,17 @@ def get_article(lang,page):
         return sr
     except BaseException as e:
         return None
+def clean_article(article):
+    res = re.sub(r'\{\{(.*)\}\}','',article)
+    res = re.sub(r'<!--(.*)-->','',res)
+    res = re.sub(r'<ref(.*)</ref>','',res)
+    res = re.sub(r'\[\[(.*):(.*)\]\]','',res)
+    res = re.sub(r'\[\[(?:[^|\]]*\|)?([^\]]+)\]\]',r'\1',res)
+    res = re.sub(r'\[\[(.*)\]\]','',res)
+    res = res.replace('\'','')
+    res = res.replace('&nbsp;',' ')
+    res = re.sub(r'====(.*)====',r'\n\1\n',res)
+    res = re.sub(r'===(.*)===',r'\n\1\n',res)
+    res = re.sub(r'==(.*)==',r'\n\1\n',res)
+    res = re.sub(r'=(.*)=',r'\n\1\n',res)
+    return res
