@@ -32,11 +32,11 @@ def is_question(sentence_doc):
     for token in sentence_doc:
         if token.tag_ in ['PWS','PWAV','WP','WRB']\
         and token.pos_ in ['PRON','ADV','SCONJ']:
-            if token.lemma_ in ['wer','who']:
+            if token.lemma_.lower() in ['wer','who']:
                 res['label'] = ['PERSON','PER']
-            elif token.lemma_ in ['wann','when']:
+            elif token.lemma_.lower() in ['wann','when']:
                 res['label'] = ['DATE']
-            elif token.lemma_ in ['was','what']:
+            elif token.lemma_.lower() in ['was','what']:
                 res['label'] = ['ORG']
         if token.tag_ in ['VAFIN','VBZ','VVPP']\
         and token.dep_ != 'ROOT':

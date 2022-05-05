@@ -1,6 +1,8 @@
-import nlp,urllib.request,urllib.parse,json,re
+from tkinter import image_names
+import nlp,urllib.request,urllib.parse,json,re,pathlib,tempfile
 url_article = 'https://{lang}.wikipedia.org/w/api.php?action=parse&page={page}&prop=wikitext&format=json';
 url_search = 'https://{lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch={object}&utf8=&format=json'
+url_image = 'https://{lang}.wikipedia.org/wiki/en:Special:Filepath/{object}?width=250'
 async def CheckSentence(words,User,ForceAnswer=False):
     res = None
     quest = nlp.is_question(words)
@@ -24,6 +26,17 @@ async def CheckSentence(words,User,ForceAnswer=False):
                         res['markdown'].append(sentence.text.strip())
                         count +=1
                     if count>=3: break
+                for image in re.finditer('\[\[File|Datei[^|\]]+\.(jpg|png|gif|svg)[|\]]',article,flags=re.IGNORECASE):
+                    imagePath = image.group(0)[:-1]
+                    imagePath = imagePath[imagePath.find(':')+1:]
+                    nurl = url_image.format(lang=words.lang_,object=urllib.parse.quote(imagePath))
+                    req = urllib.request.Request(nurl, headers=nlp.request_headers)
+                    response = urllib.request.urlopen(req)
+                    fileName = str(pathlib.Path(tempfile.gettempdir()) / imagePath)
+                    with open(fileName,'wb') as f:
+                        f.write(response.read())
+                    res['image'] = fileName
+                    break
             else:
                 res = {'markdown':[]}
                 for sentence in sentences.sents:
@@ -58,7 +71,8 @@ def get_article(lang,page):
     except BaseException as e:
         return None
 def clean_article(article):
-    res = re.sub(r'\{\{(.*)\}\}','',article)
+    res = article
+    res = re.sub(r"\{\{(.*)\}\}",'',res)
     res = re.sub(r'<!--(.*)-->','',res)
     res = re.sub(r'<ref(.*)</ref>','',res)
     res = re.sub(r'\[\[(.*):(.*)\]\]','',res)
@@ -70,4 +84,5 @@ def clean_article(article):
     res = re.sub(r'===(.*)===',r'\n\1\n',res)
     res = re.sub(r'==(.*)==',r'\n\1\n',res)
     res = re.sub(r'=(.*)=',r'\n\1\n',res)
+    res = re.sub(r"\{\{Infobox ([\s\S]*)\}\}",'',res,flags=re.MULTILINE|re.DOTALL) 
     return res
